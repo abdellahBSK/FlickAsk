@@ -7,7 +7,6 @@ import Navbar from "@/components/layout/Navbar";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-<<<<<<< HEAD
 import { Sparkles,  Users, Star, Menu, X } from 'lucide-react';
 
 import { Video, Mic, Upload, Send, MessageSquare, ArrowRight, Play, Camera, Edit, Share2 } from 'lucide-react';
@@ -244,11 +243,6 @@ export const VideoCreationSteps = () => {
     </section>
   );
 };
-=======
-import { Video, Mic, MessageSquare, ArrowRight, Sparkles, Play, Users, Star, Menu, X } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-
->>>>>>> 2713659 (améliorer le design de frontend des pages hero navbar questions et vidéo recorder)
 const recentQuestions = [
   {
     id: "1",
@@ -342,12 +336,8 @@ export default function HomePage() {
         </div>
       </section>
       
-<<<<<<< HEAD
       <VideoCreationSteps />
       
-=======
-    
->>>>>>> 2713659 (améliorer le design de frontend des pages hero navbar questions et vidéo recorder)
     </div>
   );
 }

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-<<<<<<< HEAD
 import { Video, Mic, MessageSquare, ArrowRight, Sparkles, Play, Users, Star, Menu, X, User, Lock, Mail, Eye, EyeOff, LogIn, UserPlus, Github, Chrome, Facebook } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
@@ -23,15 +22,6 @@ export default function Navbar() {
     firstName: '',
     lastName: ''
   });
-=======
-import { Video, Mic, MessageSquare, ArrowRight, Sparkles, Play, Users, Star, Menu, X } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-
-// Navbar Component
-export default  function Navbar() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
->>>>>>> 2713659 (améliorer le design de frontend des pages hero navbar questions et vidéo recorder)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,7 +32,6 @@ export default  function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-<<<<<<< HEAD
   // Bloquer le scroll du body quand le modal est ouvert
   useEffect(() => {
     if (showAuthModal) {
@@ -89,8 +78,6 @@ export default  function Navbar() {
     // Logique de connexion sociale
   };
 
-=======
->>>>>>> 2713659 (améliorer le design de frontend des pages hero navbar questions et vidéo recorder)
   const navItems = [
     { name: 'Accueil', href: '/' },
     { name: 'Poser une question', href: '/ask' },
@@ -98,7 +85,6 @@ export default  function Navbar() {
   ];
 
   return (
-<<<<<<< HEAD
     <>
       <header 
         className={`sticky top-0 z-40 w-full transition-all duration-500 ${
@@ -455,84 +441,5 @@ export default  function Navbar() {
         </div>
       )}
     </>
-=======
-    <header 
-      className={`sticky top-0 z-50 w-full transition-all duration-500 ${
-        isScrolled 
-          ? "bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100" 
-          : "bg-transparent"
-      }`}
-    >
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center space-x-3 group">
-          <div className="relative">
-            <Video className="h-8 w-8 text-blue-500 transition-transform duration-300 group-hover:scale-110" />
-            <div className="absolute -inset-2 bg-blue-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
-          </div>
-          <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            FlickAsk
-          </span>
-        </Link>
-        
-        <nav className="hidden md:flex items-center space-x-8">
-          {navItems.map((item) => (
-            <div key={item.name} className="relative group">
-              <Link 
-                href={item.href} 
-                className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-300"
-              >
-                {item.name}
-              </Link>
-              <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 group-hover:w-full transition-all duration-300"></div>
-            </div>
-          ))}
-        </nav>
-        
-        <div className="flex items-center space-x-4">
-          <Button asChild className="hidden md:flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 rounded-full">
-            <Link href="/ask">
-              <Sparkles className="h-4 w-4" />
-              <span>Commencer</span>
-            </Link>
-          </Button>
-          
-          <button 
-            className="block md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        <div className={`absolute top-full left-0 w-full bg-white/95 backdrop-blur-xl shadow-lg border-b md:hidden transition-all duration-300 ${
-          isMobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
-        }`}>
-          <nav className="container mx-auto px-4 py-6 space-y-4">
-            {navItems.map((item) => (
-              <Link 
-                key={item.name}
-                href={item.href} 
-                className="block text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {item.name}
-              </Link>
-            ))}
-            <Button asChild className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full">
-              <Link href="/ask">
-                Commencer
-              </Link>
-            </Button>
-          </nav>
-        </div>
-      </div>
-    </header>
->>>>>>> 2713659 (améliorer le design de frontend des pages hero navbar questions et vidéo recorder)
   );
 }
