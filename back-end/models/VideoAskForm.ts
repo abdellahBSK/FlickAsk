@@ -2,6 +2,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 
 export interface IVideoAskForm extends Document {
   title: string;
+  videoUrl: string;
   description?: string;
   owner: Types.ObjectId;
   thumbnail?: string;

@@ -1,17 +1,22 @@
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 
-interface AuthRequest extends Request {
+interface RequestWithUser extends Request {
   userId?: string;
   userRole?: string;
 }
 
 // Get all users (admin only)
-export const getAllUsers = async (_req: Request, res: Response) => {
+export const getAllUsers = async (req: RequestWithUser, res: Response) => {
   try {
-    const users = await User.find()
-      .select('-password -__v')
-      .lean();
+    // if (req.userRole !== 'admin') {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: 'Access denied: Admin only'
+    //   });
+    // }
+
+    const users = await User.find().select('-password -__v').lean();
 
     return res.json({
       success: true,
@@ -21,18 +26,14 @@ export const getAllUsers = async (_req: Request, res: Response) => {
     console.error('Get all users error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error retrieving users',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: 'Error retrieving users'
     });
   }
 };
 
-// Get user by ID
-export const getUserById = async (req: Request, res: Response) => {
+export const getUserById = async (req: RequestWithUser, res: Response) => {
   try {
-    const user = await User.findById(req.params.id)
-      .select('-password -__v')
-      .lean();
+    const user = await User.findById(req.params.id).select('-password -__v').lean();
 
     if (!user) {
       return res.status(404).json({
@@ -55,23 +56,35 @@ export const getUserById = async (req: Request, res: Response) => {
   }
 };
 
-// Update user
-export const updateUser = async (req: AuthRequest, res: Response) => {
+export const updateUser = async (req: RequestWithUser, res: Response) => {
   try {
     const userId = req.params.id;
     const requesterId = req.userId;
     const requesterRole = req.userRole;
 
-    // Check if user has permission to update
-    if (requesterId !== userId && requesterRole !== 'admin') {
-      return res.status(403).json({
+    // if (!requesterId) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: 'Authentication required'
+    //   });
+    // }
+
+    const userToUpdate = await User.findById(userId);
+    if (!userToUpdate) {
+      return res.status(404).json({
         success: false,
-        message: 'Not authorized to update this user'
+        message: 'User not found'
       });
     }
 
-    // Filter allowed update fields
-    const allowedUpdates = ['username', 'firstName', 'lastName', 'email', 'profilePicture'];
+    // if (requesterId !== userId && requesterRole !== 'admin') {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: 'Not authorized to update this user'
+    //   });
+    // }
+
+    const allowedUpdates = ['name', 'email', 'profilePicture'];
     const updates = Object.keys(req.body)
       .filter(key => allowedUpdates.includes(key))
       .reduce((obj: Record<string, unknown>, key) => {
@@ -79,10 +92,31 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
         return obj;
       }, {});
 
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid fields to update'
+      });
+    }
+
+    if (updates.email) {
+      const existingUser = await User.findOne({ 
+        email: updates.email,
+        _id: { $ne: userId }
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already in use'
+        });
+      }
+    }
+
     const user = await User.findByIdAndUpdate(
       userId,
       { $set: updates },
-      { 
+      {
         new: true,
         runValidators: true,
         select: '-password -__v'
@@ -110,12 +144,11 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Delete user
-export const deleteUser = async (req: AuthRequest, res: Response) => {
+export const deleteUser = async (req: RequestWithUser, res: Response) => {
   try {
     const user = await User.findOneAndDelete({
       _id: req.params.id,
-      role: { $ne: 'superadmin' } // Prevent deletion of superadmin
+      role: { $ne: 'superadmin' }
     }).lean();
 
     if (!user) {
@@ -138,3 +171,4 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
