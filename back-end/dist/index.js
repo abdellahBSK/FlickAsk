@@ -13,7 +13,7 @@ const routes_1 = __importDefault(require("./routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/flickask";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://laaouinanouhaila2019:nouha2000@cluster0.osgilku.mongodb.net/flickask";
 // Middleware
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());

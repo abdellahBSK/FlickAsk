@@ -1,44 +1,87 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import RouteGuard from '@/components/RouteGuard';
 import { LogIn, Mail, Lock, Eye, EyeOff, Github, Facebook } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
 
 export default function Login() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+
+  // Vérifier si l'utilisateur est déjà connecté
+  useEffect(() => {
+    const checkAuth = () => {
+      const accessToken = localStorage.getItem('accessToken');
+      if (accessToken) {
+        // Rediriger vers l'accueil si déjà connecté
+        router.push('/');
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   const handleInputChange = (e) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
-    // Simulation d'une requête API
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    console.log('Données de connexion:', formData);
-    
-    setIsLoading(false);
-    // Redirection après connexion réussie
-    // router.push('/dashboard');
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Store tokens in localStorage or cookies
+        localStorage.setItem('accessToken', data.data.tokens.accessToken);
+        localStorage.setItem('refreshToken', data.data.tokens.refreshToken);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+        
+ 
+        router.push('/');
+      } else {
+        setError(data.message || 'Login failed');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSocialLogin = (provider) => {
     console.log(`Connexion avec ${provider}`);
-    // Logique de connexion sociale
+    // You'll need to implement OAuth flows for social login
+    alert(`${provider} login not implemented yet`);
   };
 
   return (
+    <RouteGuard requireAuth={false}>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       {/* Background animated elements */}
       <div className="absolute inset-0 overflow-hidden">
@@ -47,7 +90,6 @@ export default function Login() {
       </div>
 
       <div className="relative w-full max-w-md">
-      
         {/* Formulaire de connexion */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/20 relative">
           {/* Gradient background animé */}
@@ -69,8 +111,15 @@ export default function Login() {
               </p>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-red-600 text-sm font-medium">{error}</p>
+              </div>
+            )}
+
             {/* Formulaire */}
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
               {/* Email */}
               <div className="relative group">
                 <Mail className="absolute left-4 top-4 h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors duration-200 z-10" />
@@ -121,6 +170,7 @@ export default function Login() {
               {/* Bouton de connexion */}
               <button
                 type="submit"
+                onClick={handleSubmit}
                 disabled={isLoading}
                 className="w-full py-4 px-6 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300 focus:ring-4 focus:ring-blue-500/25 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group"
               >
@@ -134,7 +184,7 @@ export default function Login() {
                   <span className="relative z-10">Se connecter maintenant</span>
                 )}
               </button>
-            </form>
+            </div>
 
             {/* Séparateur */}
             <div className="my-8 flex items-center">
@@ -190,5 +240,6 @@ export default function Login() {
         </div>
       </div>
     </div>
+    </RouteGuard>
   );
 }

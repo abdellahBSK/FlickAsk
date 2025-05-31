@@ -1,12 +1,16 @@
 "use client";
 import React, { useState } from 'react';
-import { User, Mail, Lock, Eye, EyeOff, UserPlus, ArrowLeft, Github, Chrome, Facebook, Video, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import { User, Mail, Lock, Eye, EyeOff, UserPlus, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import RouteGuard from '@/components/RouteGuard';
+// Configuration de l'API - ajustez l'URL selon votre backend
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -16,38 +20,135 @@ export default function Register() {
   });
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
+    
+    // Clear errors when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Validation des champs requis
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'Le prénom est requis';
+    }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Le nom est requis';
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = 'L\'email est requis';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Format d\'email invalide';
+    }
+    if (!formData.password) {
+      newErrors.password = 'Le mot de passe est requis';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Le mot de passe doit contenir au moins 6 caractères';
+    }
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'La confirmation du mot de passe est requise';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const registerUser = async (userData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Erreur lors de l\'inscription');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erreur API:', error);
+      throw error;
+    }
   };
 
   const handleSubmit = async () => {
-    setIsLoading(true);
+    // Clear previous messages
+    setErrors({});
+    setSuccessMessage('');
     
-    // Validation simple
-    if (formData.password !== formData.confirmPassword) {
-      alert('Les mots de passe ne correspondent pas');
-      setIsLoading(false);
+    if (!validateForm()) {
       return;
     }
-    
-    // Simulation d'une requête API
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log('Données d\'inscription:', formData);
-    setIsLoading(false);
-    
-    // Redirection après inscription réussie
-    alert('Compte créé avec succès !');
-    // window.location.href = '/dashboard';
+
+    setIsLoading(true);
+
+    try {
+      // Préparer les données pour l'API (combiner prénom et nom)
+      const userData = {
+        name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password
+      };
+
+      const result = await registerUser(userData);
+      
+      if (result.success) {
+        setSuccessMessage('Compte créé avec succès ! Vous pouvez maintenant vous connecter.');
+        // Reset form
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          password: '',
+          confirmPassword: ''
+        });
+        
+        // Optionnel: redirection après quelques secondes
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+      }
+    } catch (error) {
+      if (error.message.includes('Email already in use')) {
+        setErrors({ email: 'Cette adresse email est déjà utilisée' });
+      } else {
+        setErrors({ general: error.message || 'Une erreur est survenue lors de l\'inscription' });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSocialRegister = (provider) => {
     console.log(`Inscription avec ${provider}`);
-    // Logique d'inscription sociale
+    // TODO: Implémenter l'authentification sociale
+  };
+
+  const inputClassName = (fieldName) => {
+    const baseClass = "w-full pl-12 pr-4 py-4 border-2 rounded-2xl focus:ring-4 focus:ring-blue-500/20 transition-all duration-300 bg-gray-50/50 focus:bg-white hover:bg-white/80 text-gray-800 placeholder-gray-500 font-medium";
+    const errorClass = errors[fieldName] ? "border-red-300 focus:border-red-500 focus:ring-red-500/20" : "border-gray-200 focus:border-blue-500";
+    return `${baseClass} ${errorClass}`;
   };
 
   return (
+    <RouteGuard requireAuth={false}>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       {/* Background Pattern Animation */}
       <div className="absolute inset-0 overflow-hidden">
@@ -59,12 +160,10 @@ export default function Register() {
       </div>
 
       <div className="relative w-full max-w-md">
-     
         {/* Card principale */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
           {/* Header */}
           <div className="relative px-8 pt-12 pb-8 text-center">
-         
             {/* Icon et titre */}
             <div className="inline-flex items-center justify-center w-20 h-20 mb-6 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl shadow-xl relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -80,6 +179,21 @@ export default function Register() {
             </p>
           </div>
 
+          {/* Messages de succès/erreur */}
+          {successMessage && (
+            <div className="mx-8 mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center space-x-3">
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <p className="text-green-800 text-sm font-medium">{successMessage}</p>
+            </div>
+          )}
+
+          {errors.general && (
+            <div className="mx-8 mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <p className="text-red-800 text-sm font-medium">{errors.general}</p>
+            </div>
+          )}
+
           {/* Formulaire */}
           <div className="px-8 pb-12">
             <div className="space-y-6">
@@ -93,9 +207,12 @@ export default function Register() {
                     placeholder="Prénom"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-gray-50/50 focus:bg-white hover:bg-white/80 text-gray-800 placeholder-gray-500 font-medium"
+                    className={inputClassName('firstName')}
                     required
                   />
+                  {errors.firstName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                  )}
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 </div>
                 
@@ -107,9 +224,12 @@ export default function Register() {
                     placeholder="Nom"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-gray-50/50 focus:bg-white hover:bg-white/80 text-gray-800 placeholder-gray-500 font-medium"
+                    className={inputClassName('lastName')}
                     required
                   />
+                  {errors.lastName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                  )}
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 </div>
               </div>
@@ -123,9 +243,12 @@ export default function Register() {
                   placeholder="Votre adresse e-mail"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-gray-50/50 focus:bg-white hover:bg-white/80 text-gray-800 placeholder-gray-500 font-medium"
+                  className={`${inputClassName('email')} pr-4`}
                   required
                 />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                )}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               </div>
 
@@ -138,7 +261,7 @@ export default function Register() {
                   placeholder="Créer un mot de passe"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-gray-50/50 focus:bg-white hover:bg-white/80 text-gray-800 placeholder-gray-500 font-medium"
+                  className={`${inputClassName('password')} pr-14`}
                   required
                 />
                 <button
@@ -148,6 +271,9 @@ export default function Register() {
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                )}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               </div>
 
@@ -160,7 +286,7 @@ export default function Register() {
                   placeholder="Confirmer le mot de passe"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className="w-full pl-12 pr-14 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-gray-50/50 focus:bg-white hover:bg-white/80 text-gray-800 placeholder-gray-500 font-medium"
+                  className={`${inputClassName('confirmPassword')} pr-14`}
                   required
                 />
                 <button
@@ -170,6 +296,9 @@ export default function Register() {
                 >
                   {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                )}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               </div>
 
@@ -216,7 +345,6 @@ export default function Register() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  <span className="text-gray-700 font-medium text-sm">Google</span>
                 </button>
                 
                 <button 
@@ -224,8 +352,9 @@ export default function Register() {
                   onClick={() => handleSocialRegister('Facebook')}
                   className="flex items-center justify-center space-x-2 py-3 px-4 border-2 border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-all duration-300 group transform hover:scale-105"
                 >
-                  <Facebook className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
-                  <span className="text-gray-700 font-medium text-sm">Facebook</span>
+                  <svg className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform duration-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
                 </button>
                 
                 <button 
@@ -233,8 +362,9 @@ export default function Register() {
                   onClick={() => handleSocialRegister('GitHub')}
                   className="flex items-center justify-center space-x-2 py-3 px-4 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 group transform hover:scale-105"
                 >
-                  <Github className="w-5 h-5 text-gray-700 group-hover:scale-110 transition-transform duration-200" />
-                  <span className="text-gray-700 font-medium text-sm">GitHub</span>
+                  <svg className="w-5 h-5 text-gray-700 group-hover:scale-110 transition-transform duration-200" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
                 </button>
               </div>
 
@@ -243,12 +373,12 @@ export default function Register() {
                 <p className="text-gray-600 text-lg mb-2">
                   Vous avez déjà un compte ?
                 </p>
-                <Link
+                <a
                   href="/login"
                   className="text-blue-600 hover:text-purple-600 font-bold text-lg transition-all duration-200 hover:scale-105 underline decoration-2 underline-offset-4 hover:decoration-purple-600"
                 >
                   Se connecter maintenant
-                </Link>
+                </a>
               </div>
             </div>
           </div>
@@ -258,13 +388,13 @@ export default function Register() {
         <div className="mt-8 text-center text-gray-500 text-sm">
           <p>En créant un compte, vous acceptez nos</p>
           <div className="space-x-4 mt-2">
-            <Link href="/terms" className="hover:text-blue-600 transition-colors duration-200">
+            <a href="/terms" className="hover:text-blue-600 transition-colors duration-200">
               Conditions d'utilisation
-            </Link>
+            </a>
             <span>•</span>
-            <Link href="/privacy" className="hover:text-blue-600 transition-colors duration-200">
+            <a href="/privacy" className="hover:text-blue-600 transition-colors duration-200">
               Politique de confidentialité
-            </Link>
+            </a>
           </div>
         </div>
       </div>
@@ -298,5 +428,6 @@ export default function Register() {
         }
       `}</style>
     </div>
+    </RouteGuard>
   );
 }
