@@ -17,7 +17,7 @@ interface LoginRequestBody {
 }
 
 // Register a new user
-export const registerUser = async (req: Request<{}, {}, RegisterRequestBody>, res: Response) => {
+export const  registerUser = async (req: Request<{}, {}, RegisterRequestBody>, res: Response) => {
   try {
     // Validate request body
     if (!req.body || typeof req.body !== 'object') {
@@ -103,6 +103,8 @@ export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Res
         message: 'Invalid credentials' 
       });
     }
+
+    
 
     console.log('Found user:', user.email);
     
