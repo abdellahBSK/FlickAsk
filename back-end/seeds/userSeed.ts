@@ -30,6 +30,7 @@ const testUsers = [
         password: 'admin123456',  // Updated to meet 6 character minimum
         firstName: 'Admin',
         lastName: 'User',
+        role: 'admin',
         isActive: true,
         profilePicture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin'
     }
@@ -52,7 +53,7 @@ async function seedDatabase() {
             })
         );        console.log(`Created ${createdUsers.length} users:`);
         createdUsers.forEach(user => {
-            console.log(`✅ User ${user.username} (${user.email}) created successfully`);
+            console.log(`✅ User ${user.name} (${user.email}) created successfully`);
         });
 
     } catch (error) {
