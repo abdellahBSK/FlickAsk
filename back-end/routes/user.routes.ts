@@ -5,7 +5,7 @@ import {
   updateUser,
   deleteUser
 } from '../controllers/user.controller';
-// import { authenticate } from '../middlewares/auth.middleware';
+import { authenticate } from '../middlewares/auth.middleware';
 import { AuthRequest } from '../types/express';
 
 const router = Router();
@@ -21,11 +21,10 @@ const asyncHandler = (
 
 // Apply authentication middleware to all routes
 // router.use(authenticate);
-
-// Protected routes
-router.get('/', asyncHandler(getAllUsers));
-router.get('/:id', asyncHandler(getUserById));
-router.patch('/:id', asyncHandler(updateUser));
-router.delete('/:id', asyncHandler(deleteUser));
+// Protected user routes
+router.get('/', authenticate, asyncHandler(getAllUsers));
+router.get('/:id', authenticate, asyncHandler(getUserById));
+router.patch('/:id', authenticate, asyncHandler(updateUser));
+router.delete('/:id', authenticate, asyncHandler(deleteUser));
 
 export default router;
