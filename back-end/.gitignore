@@ -7,3 +7,5 @@
 # Lock files
 package-lock.json
 
+# upload videos
+/uploads/
