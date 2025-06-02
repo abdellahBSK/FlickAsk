@@ -1,9 +1,106 @@
 "use client";
 
 import { useState } from "react";
-import { Share, Link, Check, Sparkles, Video, FileText, Send } from "lucide-react";
+import { Share, Link, Check, Sparkles, Video, FileText, Send, Camera, StopCircle, Play } from "lucide-react";
 
-import VideoRecorder from "@/components/ask/VideoRecorder";
+// Simple VideoRecorder component
+function VideoRecorder({ onVideoSelected }) {
+  const [isRecording, setIsRecording] = useState(false);
+  const [hasVideo, setHasVideo] = useState(false);
+  const [videoPreview, setVideoPreview] = useState(null);
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setHasVideo(true);
+      setVideoPreview(URL.createObjectURL(file));
+      onVideoSelected(file);
+    }
+  };
+
+  const simulateRecording = () => {
+    setIsRecording(true);
+    setTimeout(() => {
+      setIsRecording(false);
+      setHasVideo(true);
+      // Simulate a recorded video
+      onVideoSelected(new File(["video"], "recorded-video.mp4", { type: "video/mp4" }));
+    }, 3000);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="relative">
+        <div className="w-full h-64 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+          {isRecording ? (
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <div className="w-4 h-4 bg-white rounded-full"></div>
+              </div>
+              <p className="text-gray-600 font-medium">Enregistrement en cours...</p>
+            </div>
+          ) : hasVideo ? (
+            <div className="text-center">
+              {videoPreview ? (
+                <video 
+                  src={videoPreview} 
+                  controls 
+                  className="max-h-full max-w-full rounded-lg"
+                />
+              ) : (
+                <>
+                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Check className="h-8 w-8 text-white" />
+                  </div>
+                  <p className="text-green-600 font-medium">Vidéo enregistrée avec succès !</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="text-center">
+              <Video className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium mb-2">Aucune vidéo sélectionnée</p>
+              <p className="text-sm text-gray-400">Cliquez sur un bouton ci-dessous pour commencer</p>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          type="button"
+          onClick={simulateRecording}
+          disabled={isRecording}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium rounded-lg hover:from-red-600 hover:to-pink-700 transition-all duration-300 disabled:opacity-50"
+        >
+          {isRecording ? (
+            <>
+              <StopCircle className="h-4 w-4" />
+              Arrêter l'enregistrement
+            </>
+          ) : (
+            <>
+              <Camera className="h-4 w-4" />
+              Enregistrer une vidéo
+            </>
+          )}
+        </button>
+        
+        <label className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 cursor-pointer">
+          <input
+            type="file"
+            accept="video/*"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <Video className="h-4 w-4" />
+          Importer une vidéo
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export default function AskPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -13,8 +110,7 @@ export default function AskPage() {
   const [generatedLink, setGeneratedLink] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     setIsSubmitting(true);
     
     setTimeout(() => {
@@ -66,7 +162,7 @@ export default function AskPage() {
         
         {!isShared ? (
           <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 md:p-12">
-            <div onSubmit={handleSubmit} className="space-y-8">
+            <div className="space-y-8">
               {/* Title Section */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 mb-2">
@@ -77,7 +173,7 @@ export default function AskPage() {
                     Titre de votre question <span className="text-red-500">*</span>
                   </label>
                 </div>
-                <div className="relative">
+                <div className="relative group">
                   <input
                     id="title"
                     type="text"
@@ -127,7 +223,8 @@ export default function AskPage() {
               {/* Submit Button */}
               <div className="pt-6">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleSubmit}
                   disabled={!isFormValid || isSubmitting}
                   className="group relative w-full md:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed overflow-hidden"
                 >

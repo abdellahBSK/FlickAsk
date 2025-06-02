@@ -105,45 +105,46 @@ const FlickCard = ({ question }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
+  // Harmonisation avec les couleurs du hero (bleu, violet, teal)
   const statusConfig = {
     trending: { 
-      gradient: "from-pink-500 via-red-500 to-yellow-500", 
+      gradient: "from-blue-500 via-purple-500 to-indigo-600", 
       badge: "🔥 Trending",
-      glow: "shadow-pink-500/25"
+      glow: "shadow-blue-500/25"
     },
     hot: { 
-      gradient: "from-orange-500 via-red-500 to-pink-500", 
+      gradient: "from-purple-500 via-blue-500 to-cyan-500", 
       badge: "⚡ Hot",
-      glow: "shadow-orange-500/25"
-    },
-    featured: { 
-      gradient: "from-purple-500 via-blue-500 to-indigo-500", 
-      badge: "⭐ Featured",
       glow: "shadow-purple-500/25"
     },
+    featured: { 
+      gradient: "from-indigo-500 via-blue-500 to-purple-600", 
+      badge: "⭐ Featured",
+      glow: "shadow-indigo-500/25"
+    },
     new: { 
-      gradient: "from-green-500 via-teal-500 to-blue-500", 
+      gradient: "from-emerald-500 via-teal-500 to-cyan-500", 
       badge: "✨ New",
-      glow: "shadow-green-500/25"
+      glow: "shadow-emerald-500/25"
     },
     popular: { 
-      gradient: "from-blue-500 via-purple-500 to-pink-500", 
+      gradient: "from-blue-500 via-cyan-500 to-teal-500", 
       badge: "💎 Popular",
       glow: "shadow-blue-500/25"
     }
   };
 
-  const config =  statusConfig.new;
+  const config = statusConfig[question.status] || statusConfig.new;
 
   return (
     <div 
-      className={`group relative bg-white/70 backdrop-blur-xl rounded-3xl overflow-hidden transition-all duration-500 hover:scale-105 border border-white/20 ${config.glow} hover:shadow-2xl hover:shadow-current/10`}
+      className={`group relative bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden transition-all duration-500 hover:scale-105 border border-white/30 ${config.glow} hover:shadow-2xl hover:shadow-current/10`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Gradient Border Effect */}
       <div className={`absolute inset-0 bg-gradient-to-r ${config.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl`}>
-        <div className="absolute inset-[2px] bg-white/90 backdrop-blur-xl rounded-3xl" />
+        <div className="absolute inset-[2px] bg-white/95 backdrop-blur-xl rounded-3xl" />
       </div>
 
       <div className="relative">
@@ -155,7 +156,7 @@ const FlickCard = ({ question }) => {
             className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
           />
           
-          {/* Gradient overlay animé */}
+          {/* Gradient overlay harmonisé */}
           <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-20 transition-opacity duration-500 group-hover:opacity-40`} />
           
           {/* Particules flottantes */}
@@ -240,14 +241,14 @@ const FlickCard = ({ question }) => {
             </div>
           </div>
 
-          {/* Category with premium styling */}
+          {/* Category avec couleurs harmonisées */}
           <div className="mb-3">
             <span className={`inline-block px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r ${config.gradient} text-white shadow-lg`}>
               {question.category}
             </span>
           </div>
 
-          <h3 className="font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-600 group-hover:bg-clip-text transition-all text-lg">
+          <h3 className="font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all text-lg">
             {question.title}
           </h3>
           
@@ -258,7 +259,7 @@ const FlickCard = ({ question }) => {
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-4">
             {question.tags.map((tag, index) => (
-              <span key={index} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium hover:bg-gray-200 transition-colors cursor-pointer">
+              <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium hover:bg-blue-100 transition-colors cursor-pointer border border-blue-100">
                 #{tag}
               </span>
             ))}
@@ -394,47 +395,43 @@ export default function FlickAskDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-slate-900 to-slate-900" />
-      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
-      
-      {/* Floating orbs */}
-      <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}} />
-      <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}} />
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden">
+      {/* Background harmonisé avec le hero */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -right-1/4 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-1/2 -left-1/4 w-96 h-96 bg-gradient-to-tr from-emerald-400/15 to-cyan-500/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/4 left-1/2 w-64 h-64 bg-gradient-to-bl from-indigo-400/20 to-blue-500/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+      </div>
 
-      {/* Header premium */}
-      <div className="">
+      {/* Header premium avec couleurs harmonisées */}
+      <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             
-            {/* Premium search */}
-
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity" />
-                <div className="relative bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/60" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher dans FlickAsk..."
-                    className="pl-12 pr-6 py-4 bg-transparent text-white placeholder-white/50 rounded-2xl outline-none w-full sm:w-96 font-medium"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+            {/* Premium search avec couleurs du hero */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity" />
+              <div className="relative bg-white/70 backdrop-blur-xl rounded-2xl border border-white/30 shadow-lg">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Rechercher dans FlickAsk..."
+                  className="pl-12 pr-6 py-4 bg-transparent text-gray-800 placeholder-gray-500 rounded-2xl outline-none w-full sm:w-96 font-medium"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <button className="flex items-center space-x-2 px-6 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-2xl border border-white/20 transition-all text-white font-medium group">
-                <Filter className="h-5 w-5 group-hover:rotate-12 transition-transform" />
-                <span>Filtres</span>
-              </button>
             </div>
-        
+            <button className="flex items-center space-x-2 px-6 py-4 bg-white/70 hover:bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 transition-all text-gray-700 font-medium group shadow-lg">
+              <Filter className="h-5 w-5 group-hover:rotate-12 transition-transform text-blue-600" />
+              <span>Filtres</span>
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6 py-12">
-        {/* Premium analytics */}
+        {/* Analytics avec couleurs harmonisées */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           <MetricCard
             title="Questions créatives"
@@ -442,7 +439,7 @@ export default function FlickAskDashboard() {
             subtitle="Cette semaine"
             change="+47%"
             icon={Video}
-            gradient="from-purple-600 via-purple-500 to-indigo-500"
+            gradient="from-blue-500 via-purple-500 to-indigo-600"
             delay={0}
           />
           <MetricCard
@@ -451,7 +448,7 @@ export default function FlickAskDashboard() {
             subtitle="Communauté active"
             change="+89%"
             icon={MessageSquare}
-            gradient="from-pink-600 via-rose-500 to-orange-500"
+            gradient="from-purple-500 via-blue-500 to-cyan-500"
             delay={200}
           />
           <MetricCard
@@ -460,14 +457,14 @@ export default function FlickAskDashboard() {
             subtitle="Impact global"
             change={analytics.growthRate}
             icon={Eye}
-            gradient="from-blue-600 via-cyan-500 to-teal-500"
+            gradient="from-emerald-500 via-teal-500 to-cyan-500"
             delay={400}
           />
         </div>
 
-        {/* Premium tabs */}
+        {/* Tabs avec couleurs harmonisées */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-12">
-          <div className="flex items-center space-x-2 bg-white/5 backdrop-blur-xl rounded-2xl p-2 mb-6 sm:mb-0 border border-white/10">
+          <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-xl rounded-2xl p-2 mb-6 sm:mb-0 border border-white/20 shadow-lg">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -476,14 +473,14 @@ export default function FlickAskDashboard() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-3 px-6 py-3 rounded-xl transition-all font-semibold ${
                     activeTab === tab.id
-                      ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg scale-105"
-                      : "text-white/70 hover:text-white hover:bg-white/5"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105"
+                      : "text-gray-600 hover:text-gray-800 hover:bg-white/40"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{tab.label}</span>
                   <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-                    activeTab === tab.id ? "bg-white/20" : "bg-white/10"
+                    activeTab === tab.id ? "bg-white/20" : "bg-gray-100"
                   }`}>
                     {tab.count}
                   </span>
@@ -506,16 +503,16 @@ export default function FlickAskDashboard() {
           ))}
         </div>
 
-        {/* Premium empty state */}
+        {/* Premium empty state avec couleurs harmonisées */}
         {getFilteredByTab(activeTab).length === 0 && (
           <div className="text-center py-20">
-            <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6 backdrop-blur-xl">
-              <Sparkles className="h-12 w-12 text-white/80" />
+            <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6 backdrop-blur-xl">
+              <Sparkles className="h-12 w-12 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold text-white mb-4">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">
               Aucune question trouvée
             </h3>
-            <p className="text-white/60 max-w-md mx-auto">
+            <p className="text-gray-600 max-w-md mx-auto">
               Explorez d'autres catégories ou créez la première question de cette section !
             </p>
           </div>
