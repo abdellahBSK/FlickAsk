@@ -5,11 +5,18 @@ import { AuthRequest } from '../types/express'
 // controllers/videoAsk.controller.ts
 export const createVideoAskForm = async (req: Request, res: Response) => {
   try {
-    const { title, description, owner, status, isPublic, settings, tags } =
+    const { title, description, status, isPublic, settings, tags } =
       req.body
 
     const videoUrl = req.file ? `/uploads/${req.file.filename}` : null
-
+console.log("new",title,
+      description,
+      // owner,
+      status,
+      isPublic,
+      settings,
+      tags,
+      videoUrl)
     const newForm = new VideoAskForm({
       title,
       description,
@@ -29,6 +36,7 @@ export const createVideoAskForm = async (req: Request, res: Response) => {
       data: newForm
     })
   } catch (error) {
+    console.log("ffff",error)
     res.status(400).json({
       success: false,
       message: 'Upload failed',

@@ -1,10 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { Share, Link, Check, Sparkles, Video, FileText, Send, Camera, StopCircle, Play } from "lucide-react";
+import { Share, Link, Check, Sparkles, Video, FileText, Send, Camera, StopCircle, Play, AlertCircle, Save } from "lucide-react";
+
+// Configuration API
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+// Service API
+const apiService = {
+  async createVideoAskForm(formData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/videos/upload`, {
+        method: 'POST',
+        body: formData, // FormData pour l'upload de fichier
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la création');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
+};
 
 // Simple VideoRecorder component
-function VideoRecorder({ onVideoSelected }) {
+function VideoRecorder({ onVideoSelected, error }) {
   const [isRecording, setIsRecording] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
   const [videoPreview, setVideoPreview] = useState(null);
@@ -12,6 +37,20 @@ function VideoRecorder({ onVideoSelected }) {
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
+      // Validation du fichier - Ajusté pour correspondre au backend (500MB max)
+      const maxSize = 500 * 1024 * 1024; // 500MB comme dans le backend
+      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+      
+      if (file.size > maxSize) {
+        alert('Le fichier est trop volumineux. Taille maximale: 500MB');
+        return;
+      }
+      
+      if (!allowedTypes.includes(file.type)) {
+        alert('Format de fichier non supporté. Utilisez MP4, WebM, OGG ou MOV');
+        return;
+      }
+
       setHasVideo(true);
       setVideoPreview(URL.createObjectURL(file));
       onVideoSelected(file);
@@ -24,14 +63,15 @@ function VideoRecorder({ onVideoSelected }) {
       setIsRecording(false);
       setHasVideo(true);
       // Simulate a recorded video
-      onVideoSelected(new File(["video"], "recorded-video.mp4", { type: "video/mp4" }));
+      const mockFile = new File(["video"], "recorded-video.mp4", { type: "video/mp4" });
+      onVideoSelected(mockFile);
     }, 3000);
   };
 
   return (
     <div className="space-y-4">
       <div className="relative">
-        <div className="w-full h-64 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+        <div className={`w-full h-64 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl border-2 border-dashed ${error ? 'border-red-300 bg-red-50' : 'border-gray-300'} flex items-center justify-center overflow-hidden`}>
           {isRecording ? (
             <div className="text-center">
               <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
@@ -64,6 +104,12 @@ function VideoRecorder({ onVideoSelected }) {
             </div>
           )}
         </div>
+        {error && (
+          <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-red-500 text-sm">
+            <AlertCircle className="h-3 w-3" />
+            <span>{error}</span>
+          </div>
+        )}
       </div>
       
       <div className="flex flex-col sm:flex-row gap-3">
@@ -105,22 +151,116 @@ export default function AskPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState(null);
+  const [tags, setTags] = useState("");
+  const [isPublic, setIsPublic] = useState(true);
+  const [status, setStatus] = useState("published"); // NEW: Status state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isShared, setIsShared] = useState(false);
   const [generatedLink, setGeneratedLink] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [error, setError] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
 
-  const handleSubmit = () => {
-    setIsSubmitting(true);
+  // Status options matching your enum
+  const statusOptions = [
+    { value: 'draft', label: 'Brouillon', description: 'Sauvegarder sans publier', icon: Save },
+    { value: 'published', label: 'Publié', description: 'Visible par tous', icon: Share },
+    { value: 'archived', label: 'Archivé', description: 'Masqué mais conservé', icon: FileText }
+  ];
+
+  const validateForm = () => {
+    const errors = {};
     
-    setTimeout(() => {
-      const questionId = Math.random().toString(36).substring(2, 10);
-      const link = `${window.location.origin}/answer/${questionId}`;
+    if (!title.trim()) {
+      errors.title = "Le titre est requis";
+    }
+    
+    if (!videoFile) {
+      errors.video = "Une vidéo est requise";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (submitStatus = status) => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      // Créer FormData pour l'upload - Adapté pour correspondre au backend
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('video', videoFile); // Le backend attend 'video'
       
-      setGeneratedLink(link);
-      setIsShared(true);
+      // Convertir isPublic en string car FormData ne gère que les strings
+      formData.append('isPublic', isPublic.toString());
+      formData.append('status', submitStatus); // Use the correct status enum value
+      
+      // Traiter les tags - Convertir en array puis en JSON string
+      if (tags.trim()) {
+        const tagArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+        formData.append('tags', JSON.stringify(tagArray));
+      } else {
+        formData.append('tags', JSON.stringify([]));
+      }
+      
+      // Paramètres par défaut - Convertir en JSON string
+      const defaultSettings = {
+        allowAnonymous: true,
+        moderateAnswers: false,
+        notifyOnAnswer: true
+      };
+      formData.append('settings', JSON.stringify(defaultSettings));
+
+      // Debug: Afficher le contenu du FormData
+      console.log('FormData content:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+
+      // Appel API
+      const response = await apiService.createVideoAskForm(formData);
+      
+      if (response.success) {
+        // Générer le lien de partage avec l'ID retourné par le backend
+        const questionId = response.data._id || response.data.id || Math.random().toString(36).substring(2, 10);
+        const link = `${window.location.origin}/answer/${questionId}`;
+        
+        setGeneratedLink(link);
+        setIsShared(true);
+        
+        // Optionnel: Log de succès
+        console.log('Form created successfully:', response.data);
+      } else {
+        throw new Error(response.message || 'Erreur lors de la création');
+      }
+      
+    } catch (error) {
+      console.error('Submission error:', error);
+      
+      // Améliorer la gestion des erreurs
+      let errorMessage = 'Une erreur est survenue lors de l\'envoi';
+      
+      if (error.message.includes('413')) {
+        errorMessage = 'Le fichier vidéo est trop volumineux (max 500MB)';
+      } else if (error.message.includes('400')) {
+        errorMessage = 'Données invalides. Vérifiez tous les champs requis.';
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   const handleCopyLink = () => {
@@ -162,6 +302,14 @@ export default function AskPage() {
         
         {!isShared ? (
           <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/50 p-8 md:p-12">
+            {/* Message d'erreur global */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-700">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
             <div className="space-y-8">
               {/* Title Section */}
               <div className="space-y-3">
@@ -179,10 +327,21 @@ export default function AskPage() {
                     type="text"
                     placeholder="Ex: Comment configurer un environnement de développement React ?"
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      if (formErrors.title) {
+                        setFormErrors(prev => ({ ...prev, title: null }));
+                      }
+                    }}
                     required
-                    className="w-full px-4 py-4 bg-white/80 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-300 text-lg placeholder-gray-400"
+                    className={`w-full px-4 py-4 bg-white/80 border ${formErrors.title ? 'border-red-300' : 'border-gray-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-300 text-lg placeholder-gray-400`}
                   />
+                  {formErrors.title && (
+                    <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-red-500 text-sm">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>{formErrors.title}</span>
+                    </div>
+                  )}
                   <div className="absolute inset-0 -z-10 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl blur opacity-0 transition-opacity duration-300 group-focus-within:opacity-100"></div>
                 </div>
               </div>
@@ -197,7 +356,15 @@ export default function AskPage() {
                     Votre vidéo <span className="text-red-500">*</span>
                   </label>
                 </div>
-                <VideoRecorder onVideoSelected={setVideoFile} />
+                <VideoRecorder 
+                  onVideoSelected={(file) => {
+                    setVideoFile(file);
+                    if (formErrors.video) {
+                      setFormErrors(prev => ({ ...prev, video: null }));
+                    }
+                  }} 
+                  error={formErrors.video}
+                />
               </div>
               
               {/* Description Section */}
@@ -219,14 +386,116 @@ export default function AskPage() {
                   className="w-full px-4 py-4 bg-white/80 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-transparent transition-all duration-300 text-lg placeholder-gray-400 resize-none"
                 />
               </div>
+
+              {/* Tags Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">#</span>
+                  </div>
+                  <label htmlFor="tags" className="text-lg font-semibold text-gray-800">
+                    Tags (optionnel)
+                  </label>
+                </div>
+                <input
+                  id="tags"
+                  type="text"
+                  placeholder="Ex: react, javascript, développement (séparés par des virgules)"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  className="w-full px-4 py-4 bg-white/80 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-transparent transition-all duration-300 text-lg placeholder-gray-400"
+                />
+              </div>
+
+              {/* Status Section - NEW */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <Share className="h-4 w-4 text-white" />
+                  </div>
+                  <label className="text-lg font-semibold text-gray-800">
+                    Statut de publication
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {statusOptions.map((option) => {
+                    const IconComponent = option.icon;
+                    return (
+                      <label
+                        key={option.value}
+                        className={`cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 ${
+                          status === option.value
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 bg-white/80 hover:border-gray-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="status"
+                          value={option.value}
+                          checked={status === option.value}
+                          onChange={(e) => setStatus(e.target.value)}
+                          className="sr-only"
+                        />
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            status === option.value
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            <IconComponent className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-800">{option.label}</div>
+                            <div className="text-sm text-gray-500">{option.description}</div>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Privacy Section */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isPublic}
+                    onChange={(e) => setIsPublic(e.target.checked)}
+                    className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <span className="text-lg font-medium text-gray-800">
+                    Rendre cette question publique
+                  </span>
+                </label>
+                <p className="text-sm text-gray-500 ml-8">
+                  Les questions publiques peuvent être vues par tous les utilisateurs
+                </p>
+              </div>
               
-              {/* Submit Button */}
-              <div className="pt-6">
+              {/* Submit Buttons */}
+              <div className="pt-6 flex flex-col sm:flex-row gap-4">
+                {/* Save as Draft Button */}
                 <button
                   type="button"
-                  onClick={handleSubmit}
+                  onClick={() => handleSubmit('draft')}
                   disabled={!isFormValid || isSubmitting}
-                  className="group relative w-full md:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed overflow-hidden"
+                  className="group relative px-6 py-4 bg-gradient-to-r from-gray-500 to-gray-600 text-white font-semibold rounded-xl hover:from-gray-600 hover:to-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-500/30 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-center gap-2 justify-center">
+                    <Save className="h-5 w-5" />
+                    <span>Sauvegarder brouillon</span>
+                  </div>
+                </button>
+
+                {/* Publish Button */}
+                <button
+                  type="button"
+                  onClick={() => handleSubmit('published')}
+                  disabled={!isFormValid || isSubmitting}
+                  className="group relative flex-1 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <div className="relative flex items-center gap-2 justify-center">
@@ -238,7 +507,7 @@ export default function AskPage() {
                     ) : (
                       <>
                         <Send className="h-5 w-5" />
-                        <span>Partager ma question</span>
+                        <span>Publier ma question</span>
                       </>
                     )}
                   </div>

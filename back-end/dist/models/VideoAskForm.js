@@ -17,7 +17,7 @@ const VideoAskFormSchema = new mongoose_1.Schema({
     owner: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, 'Owner is required'],
+        required: [false, 'Owner is required'],
         index: true
     },
     thumbnail: {
